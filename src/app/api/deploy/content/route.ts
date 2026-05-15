@@ -398,7 +398,6 @@ export async function PATCH(request: NextRequest) {
         versionUrl: `${request.nextUrl.protocol}//${request.nextUrl.host}/s/${code}/v/${versionNumber}`,
         currentVersionId: version.id,
         primaryVersionStrategy: deployment.primary_version_strategy || 'likes',
-        preserveHint: `请打开 ${request.nextUrl.protocol}//${request.nextUrl.host}/deploy/${deployment.id} 或 ${request.nextUrl.protocol}//${request.nextUrl.host}/s/${code}，在 htmlcode.fun 网页内手动点赞；被点赞的版本会永久保留，主域名会自动指向最高赞版本。`,
       },
       withNoStoreHeaders()
     );

@@ -573,6 +573,10 @@ export async function POST(request: NextRequest) {
 
     const detailUrl = `${protocol}://${host}/deploy/${deploymentId}`;
     const versionUrl = `${protocol}://${host}/s/${code}/v/${versionNumber}`;
+    const isNewDeployment = !existingDeployment;
+    const preserveHint = isNewDeployment
+      ? `请打开 ${detailUrl} 或 ${deployUrl}，在 htmlcode.fun 网页内手动点赞；被点赞的版本会永久保留。后续更新请复用短链后缀 ${code}，传 enableCustomCode=true、customCode="${code}"、createVersion=true，即可在同一个主域名短链下持续迭代。`
+      : undefined;
 
     return NextResponse.json({
       success: true,
@@ -589,8 +593,8 @@ export async function POST(request: NextRequest) {
       primaryVersionStrategy: typeof existingDeployment?.primary_version_strategy === 'string'
         ? existingDeployment.primary_version_strategy
         : 'likes',
-      createdVersion: Boolean(existingDeployment),
-      preserveHint: `请打开 ${detailUrl} 或 ${deployUrl}，在 htmlcode.fun 网页内手动点赞；被点赞的版本会永久保留，主域名会自动指向最高赞版本。`,
+      createdVersion: !isNewDeployment,
+      ...(preserveHint ? { preserveHint } : {}),
       requestId,
       cooldownSeconds: COOLDOWN_SECONDS,
       nextAvailableAt: new Date(Date.now() + COOLDOWN_SECONDS * 1000).toISOString(),

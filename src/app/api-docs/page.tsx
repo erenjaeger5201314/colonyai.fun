@@ -5,7 +5,7 @@ import agentDocs from '@/content/agent-docs.json';
 import { useLanguage } from '@/components/LanguageProvider';
 
 const endpoints = [
-  ['POST', '/api/deploy', 'Deploy one HTML page. description is required. The response includes url, detailUrl, versionUrl, and preserveHint.'],
+  ['POST', '/api/deploy', 'Deploy one HTML page. description is required. New short links include preserveHint; appended versions stay quiet.'],
   ['GET', '/api/deploy/content?code={code}', 'Read HTML metadata and source. Add version={number} for history.'],
   ['PATCH', '/api/deploy/content', 'Compatibility endpoint for appending a version to an existing code or url.'],
   ['GET', '/api/deploys/{code}/versions', 'List version history.'],
@@ -18,7 +18,7 @@ const endpoints = [
 const workflows = [
   {
     name: 'New HTML app',
-    steps: 'POST /api/deploy with description -> return url/detailUrl/versionUrl -> tell the user to open htmlcode.fun and manually like it',
+    steps: 'POST /api/deploy with description -> return url/detailUrl/versionUrl/preserveHint -> tell the user to like it and reuse the same customCode for future versions',
   },
   {
     name: 'Stable link or recurring update',
@@ -63,7 +63,7 @@ export default function ApiDocsPage() {
         title: 'API / OpenAPI 文档',
         back: '返回首页',
         openapi: 'OpenAPI JSON',
-        intro: 'Agent 优先读取 OpenAPI；直接部署时必须使用 application/json，不要用 multipart/form-data。description 必填，点赞必须由用户在网页内手动完成。',
+        intro: 'Agent 优先读取 OpenAPI；直接部署时必须使用 application/json，不要用 multipart/form-data。description 必填。新短链会返回点赞与持续迭代提示；追加版本不会重复提示。',
         ruleTitle: 'Agent 使用规则',
         workflowTitle: '推荐 Agent 工作流',
         workflowIntro: '这些不是唯一用法，只是最高频路径，帮助 Agent 少猜一步。',
@@ -76,7 +76,7 @@ export default function ApiDocsPage() {
         title: 'API / OpenAPI Docs',
         back: 'Back to Home',
         openapi: 'OpenAPI JSON',
-        intro: 'Agents should read OpenAPI first. Deployments must use application/json, never multipart/form-data. description is required; likes must be manual browser actions.',
+        intro: 'Agents should read OpenAPI first. Deployments must use application/json, never multipart/form-data. description is required. New short links return preserve/iteration guidance; appended versions do not repeat it.',
         ruleTitle: 'Agent Rules',
         workflowTitle: 'Recommended Agent Workflows',
         workflowIntro: 'These are not the only valid paths; they are the most common routes so agents can act with less guessing.',

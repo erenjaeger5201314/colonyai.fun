@@ -1,101 +1,129 @@
-# HTML Preview Deployer
+# HTMLCode.fun
 
-一个基于 Next.js 的 HTML 预览与部署工具。支持上传 HTML 文件、直接粘贴或编写 HTML 代码，并将页面内容发布到 Supabase Storage，生成可访问链接和二维码。
+HTMLCode.fun is a Next.js app for publishing standalone HTML pages to a shareable URL. It supports manual uploads from the browser and structured API uploads from agents, then stores HTML files, metadata, versions, likes, and QR-code assets in Supabase.
 
-## 本地启动
+Production: https://htmlcode.fun
 
-首次拉取代码后执行：
+## What It Does
 
-```bash
-npm install
-```
+- Publish HTML by uploading a file, pasting source, or calling the API.
+- Generate short links such as `/s/my-page` plus version links like `/s/my-page/v/2`.
+- Store page files in Supabase Storage and deployment metadata in Postgres.
+- Keep version history, switch the current version, or choose the latest-active-version strategy.
+- Lock liked projects and versions from destructive edits.
+- Track views, likes, file size, status, and project descriptions.
+- Provide API-friendly JSON errors for agent retries.
+- Expose a password-protected CORS toggle for API/demo workflows.
 
-拉取云端环境变量后启动开发环境：
+## Tech Stack
 
-```bash
-npm run dev
-```
+- Next.js App Router
+- React
+- Supabase Postgres + Storage
+- Vercel
+- Tailwind CSS
 
-打开 http://localhost:3000 查看页面。
+## Environment Variables
 
-## 必要环境变量
-
-当前项目后端依赖以下两个变量：
+Use Vercel as the source of truth, then pull values into `.env.local`.
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+CORS_TOGGLE_PASSWORD=
 ```
 
-建议不要手动散落维护，统一以 Vercel 为环境变量来源，本地通过 `vercel env pull` 同步到 `.env.local`。
-
-## Vercel 与 Supabase 同步流程
-
-这个仓库不要求额外安装 VS Code 插件。使用 `npx` 就可以直接调用 CLI。
-
-### 1. 绑定本地目录到你的 Vercel 项目
-
-```bash
-npm run vercel:link
-```
-
-执行时会提示你登录 Vercel，并选择当前目录对应的项目。完成后会生成 `.vercel/project.json`，该文件已被忽略，不会提交到 Git。
-
-### 2. 把 Vercel 环境变量拉到本地
+Pull production variables locally:
 
 ```bash
 npm run vercel:env:pull
 ```
 
-这一步会把 Vercel 上配置的变量写入 `.env.local`。如果你的 Vercel 项目里已经配置了 `NEXT_PUBLIC_SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY`，本地开发和构建就能直接使用。
-
-### 3. 登录并绑定 Supabase 项目
-
-```bash
-npm run supabase:login
-npm run supabase:link
-```
-
-`supabase link` 会要求输入 project ref。可以在 Supabase 项目设置页面找到。
-
-### 4. 把仓库里的数据库结构同步到 Supabase
-
-```bash
-npm run supabase:db:push
-```
-
-这个仓库当前包含一份迁移文件，用来创建：
-
-- `deployments` 表
-- `deployments` storage bucket
-- 对应的 RLS / storage policies
-
-迁移文件位置：`supabase/migrations/20240129000000_init_schema.sql`
-
-## 推荐的日常更新顺序
-
-每次你从 GitHub 拉到新代码，或者准备发布前，按这个顺序处理：
+## Local Development
 
 ```bash
 npm install
-npm run vercel:env:pull
-npm run supabase:db:push
 npm run dev
 ```
 
-如果你更新了 Vercel 环境变量，重新执行 `npm run vercel:env:pull` 即可。
+Open http://localhost:3000.
 
-如果你新增了 Supabase migration，执行 `npm run supabase:db:push` 即可把数据库结构同步到云端。
+## Database And Storage
 
-## 常用命令
+Supabase migrations live in `supabase/migrations`.
+
+They cover the deployment tables, version tables, like counters, app settings, RPC helpers, and storage policies used by the app.
+
+Sync local migrations to the linked Supabase project:
+
+```bash
+npm run supabase:db:push
+```
+
+Useful Supabase commands:
+
+```bash
+npm run supabase:login
+npm run supabase:link
+npm run supabase:db:push
+```
+
+## Deployment
+
+The project is linked to Vercel. Normal production deployment flow:
+
+```bash
+npm run lint
+npm run build
+git push origin master
+```
+
+Vercel deploys `master` to production. You can also deploy directly:
+
+```bash
+npx vercel deploy --prod --yes
+```
+
+## API Notes
+
+Main upload endpoint:
+
+```http
+POST /api/deploy
+Content-Type: application/json
+```
+
+Typical payload:
+
+```json
+{
+  "filename": "index.html",
+  "content": "<!doctype html><html>...</html>",
+  "description": "A short project description",
+  "enableCustomCode": true,
+  "customCode": "my-page"
+}
+```
+
+Other useful endpoints include:
+
+- `GET /api/deploys`
+- `GET /api/deploy/content?code=my-page`
+- `PATCH /api/deploy/content`
+- `GET /api/deploys/:code/versions`
+- `PATCH /api/deploys/:code/current`
+- `PATCH /api/deploys/:code/primary-strategy`
+
+See `/api-docs` in the running app for agent-oriented guidance.
+
+## Common Commands
 
 ```bash
 npm run dev
-npm run build
 npm run lint
+npm run build
+npm run smoke:prod
 npm run vercel:link
 npm run vercel:env:pull
-npm run supabase:login
-npm run supabase:link
 npm run supabase:db:push
 ```

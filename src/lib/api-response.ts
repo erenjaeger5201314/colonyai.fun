@@ -1,5 +1,9 @@
-import { NextResponse } from 'next/server';
-import { NO_STORE_CACHE_CONTROL } from '@/lib/deploy-config';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  CDN_CACHE_CONTROL,
+  CDN_EDGE_CACHE_CONTROL,
+  NO_STORE_CACHE_CONTROL,
+} from '@/lib/deploy-config';
 
 type JsonErrorOptions = {
   status: number;
@@ -52,4 +56,44 @@ export function withNoStoreHeaders(init?: ResponseInit): ResponseInit {
       'Cache-Control': NO_STORE_CACHE_CONTROL,
     },
   };
+}
+
+export function isSameOriginBrowserRequest(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const currentOrigin = request.nextUrl.origin;
+  const fetchSite = request.headers.get('sec-fetch-site');
+
+  return (origin === currentOrigin || Boolean(referer?.startsWith(`${currentOrigin}/`)))
+    && (fetchSite === 'same-origin' || fetchSite === 'none');
+}
+
+export function manualLikeRequiredError(action: 'like' | 'unlike') {
+  return jsonError({
+    status: 403,
+    code: action === 'like' ? 'MANUAL_LIKE_REQUIRED' : 'MANUAL_UNLIKE_REQUIRED',
+    message: action === 'like'
+      ? '点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 点赞。'
+      : '取消点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 取消点赞。',
+    hint: action === 'like'
+      ? '请把部署详情页链接交给用户，让用户在浏览器里手动点赞。'
+      : '请让用户在浏览器里手动操作。',
+  });
+}
+
+export function htmlResponse(content: string, preview = false, downloadFilename?: string) {
+  const noStore = preview || Boolean(downloadFilename);
+  const headers: Record<string, string> = {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': noStore ? NO_STORE_CACHE_CONTROL : CDN_CACHE_CONTROL,
+  };
+
+  if (downloadFilename) {
+    headers['Content-Disposition'] = `attachment; filename="${downloadFilename}"`;
+  } else if (!preview) {
+    headers['CDN-Cache-Control'] = CDN_EDGE_CACHE_CONTROL;
+    headers['Vercel-CDN-Cache-Control'] = CDN_EDGE_CACHE_CONTROL;
+  }
+
+  return new NextResponse(content, { headers });
 }

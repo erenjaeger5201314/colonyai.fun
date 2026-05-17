@@ -3,6 +3,7 @@ import { supabase } from '@/lib/db';
 import { SHORT_CODE_PATTERN } from '@/lib/deploy-config';
 import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
+import { fetchDeploymentVersion } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,16 +57,10 @@ export async function PATCH(
       });
     }
 
-    let versionQuery = supabase
-      .from('deployment_versions')
-      .select('*')
-      .eq('deployment_id', deployment.id);
-
-    versionQuery = versionId
-      ? versionQuery.eq('id', versionId)
-      : versionQuery.eq('version_number', versionNumber);
-
-    const { data: version, error: versionError } = await versionQuery.maybeSingle();
+    const { data: version, error: versionError } = await fetchDeploymentVersion(
+      deployment.id,
+      versionId || versionNumber,
+    );
 
     if (versionError || !version) {
       return jsonError({

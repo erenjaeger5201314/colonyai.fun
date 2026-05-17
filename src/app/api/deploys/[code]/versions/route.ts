@@ -5,6 +5,7 @@ import { SHORT_CODE_PATTERN } from '@/lib/deploy-config';
 import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
 import { selectPrimaryVersion } from '@/lib/version-selection';
+import { fetchDeploymentVersions } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,23 +38,20 @@ export async function GET(
       });
     }
 
-    const { data: versions, error: versionsError } = await supabase
-      .from('deployment_versions')
-      .select('*')
-      .eq('deployment_id', deployment.id)
-      .order('version_number', { ascending: false });
-
-    if (versionsError) {
+    let versions: DeploymentVersionRow[];
+    try {
+      versions = await fetchDeploymentVersions(deployment.id);
+    } catch (versionsError: unknown) {
       return jsonError({
         status: 500,
         code: 'DEPLOYMENT_VERSIONS_FETCH_FAILED',
         message: '版本历史读取失败。',
-        detail: versionsError.message,
+        detail: getErrorMessage(versionsError),
       });
     }
 
     const primaryVersion = selectPrimaryVersion(
-      (versions || []) as DeploymentVersionRow[],
+      versions,
       deployment.current_version_id,
       deployment.primary_version_strategy || 'likes',
     );
@@ -65,7 +63,7 @@ export async function GET(
         currentVersionId: deployment.current_version_id,
         primaryVersionStrategy: deployment.primary_version_strategy || 'likes',
         primaryVersionId: primaryVersion?.id ?? deployment.current_version_id,
-        versions: ((versions || []) as DeploymentVersionRow[]).map(mapDeploymentVersionRow),
+        versions: versions.map(mapDeploymentVersionRow),
       },
       withNoStoreHeaders(),
     );

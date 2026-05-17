@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { SHORT_CODE_PATTERN } from '@/lib/deploy-config';
-import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
+import {
+  isSameOriginBrowserRequest,
+  jsonError,
+  manualLikeRequiredError,
+  withNoStoreHeaders,
+} from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
+import { fetchDeploymentVersion } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,16 +19,6 @@ type VersionLikeSuccess = {
   versionLikeCount: number;
   deploymentLikeCount: number;
 };
-
-function isSameOriginBrowserRequest(request: NextRequest) {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-  const currentOrigin = request.nextUrl.origin;
-  const fetchSite = request.headers.get('sec-fetch-site');
-
-  return (origin === currentOrigin || Boolean(referer?.startsWith(`${currentOrigin}/`)))
-    && (fetchSite === 'same-origin' || fetchSite === 'none');
-}
 
 async function fetchVersion(code: string, version: string): Promise<VersionLikeError | Omit<VersionLikeSuccess, 'versionLikeCount' | 'deploymentLikeCount'>> {
   if (!SHORT_CODE_PATTERN.test(code)) {
@@ -39,17 +35,10 @@ async function fetchVersion(code: string, version: string): Promise<VersionLikeE
     return { error: 'DEPLOYMENT_NOT_FOUND' as const, detail: deploymentError?.message };
   }
 
-  const versionNumber = Number(version);
-  let versionQuery = supabase
-    .from('deployment_versions')
-    .select('id, deployment_id, version_number, like_count')
-    .eq('deployment_id', deployment.id);
-
-  versionQuery = Number.isInteger(versionNumber) && versionNumber > 0
-    ? versionQuery.eq('version_number', versionNumber)
-    : versionQuery.eq('id', version);
-
-  const { data: selectedVersion, error: versionError } = await versionQuery.maybeSingle();
+  const { data: selectedVersion, error: versionError } = await fetchDeploymentVersion(
+    deployment.id,
+    version,
+  );
   if (versionError || !selectedVersion) {
     return { error: 'DEPLOYMENT_VERSION_NOT_FOUND' as const, detail: versionError?.message };
   }
@@ -90,12 +79,7 @@ export async function POST(
 ) {
   try {
     if (!isSameOriginBrowserRequest(request)) {
-      return jsonError({
-        status: 403,
-        code: 'MANUAL_LIKE_REQUIRED',
-        message: '点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 点赞。',
-        hint: '请把部署详情页链接交给用户，让用户在浏览器里手动点赞。',
-      });
+      return manualLikeRequiredError('like');
     }
 
     const { code, version } = await params;
@@ -131,12 +115,7 @@ export async function DELETE(
 ) {
   try {
     if (!isSameOriginBrowserRequest(request)) {
-      return jsonError({
-        status: 403,
-        code: 'MANUAL_UNLIKE_REQUIRED',
-        message: '取消点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 取消点赞。',
-        hint: '请让用户在浏览器里手动操作。',
-      });
+      return manualLikeRequiredError('unlike');
     }
 
     const { code, version } = await params;

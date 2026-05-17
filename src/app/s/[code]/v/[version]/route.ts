@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import {
-  CDN_CACHE_CONTROL,
-  CDN_EDGE_CACHE_CONTROL,
-  NO_STORE_CACHE_CONTROL,
-} from '@/lib/deploy-config';
+import { htmlResponse } from '@/lib/api-response';
 import { getStoragePathFromFilePath } from '@/lib/storage';
 
 export async function GET(
@@ -68,18 +64,7 @@ export async function GET(
 
     const content = await fileData.text();
 
-    return new NextResponse(content, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': isPreview ? NO_STORE_CACHE_CONTROL : CDN_CACHE_CONTROL,
-        ...(isPreview
-          ? {}
-          : {
-              'CDN-Cache-Control': CDN_EDGE_CACHE_CONTROL,
-              'Vercel-CDN-Cache-Control': CDN_EDGE_CACHE_CONTROL,
-            }),
-      },
-    });
+    return htmlResponse(content, isPreview);
   } catch (error: unknown) {
     console.error('Serve version error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

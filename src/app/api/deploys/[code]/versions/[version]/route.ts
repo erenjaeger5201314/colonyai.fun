@@ -10,6 +10,7 @@ import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
 import { createVersionedHtmlPath, getStoragePathFromFilePath } from '@/lib/storage';
 import { selectPrimaryVersion } from '@/lib/version-selection';
+import { fetchDeploymentVersion, fetchDeploymentVersions } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +20,6 @@ type DeploymentForVersionEdit = {
   current_version_id: string | null;
   primary_version_strategy?: 'likes' | 'latest' | null;
 };
-
-function parseVersionSelector(version: string) {
-  const versionNumber = Number(version);
-  return Number.isInteger(versionNumber) && versionNumber > 0
-    ? { versionNumber, versionId: null }
-    : { versionNumber: null, versionId: version };
-}
 
 async function fetchDeploymentAndVersion(code: string, version: string) {
   if (!SHORT_CODE_PATTERN.test(code)) {
@@ -48,17 +42,7 @@ async function fetchDeploymentAndVersion(code: string, version: string) {
     };
   }
 
-  const selector = parseVersionSelector(version);
-  let versionQuery = supabase
-    .from('deployment_versions')
-    .select('*')
-    .eq('deployment_id', deployment.id);
-
-  versionQuery = selector.versionNumber
-    ? versionQuery.eq('version_number', selector.versionNumber)
-    : versionQuery.eq('id', selector.versionId);
-
-  const { data: selectedVersion, error: versionError } = await versionQuery.maybeSingle();
+  const { data: selectedVersion, error: versionError } = await fetchDeploymentVersion(deployment.id, version);
   if (versionError || !selectedVersion) {
     return {
       error: 'DEPLOYMENT_VERSION_NOT_FOUND' as const,
@@ -78,14 +62,7 @@ async function fetchDeploymentAndVersion(code: string, version: string) {
 }
 
 async function fetchVersions(deploymentId: string) {
-  const { data, error } = await supabase
-    .from('deployment_versions')
-    .select('*')
-    .eq('deployment_id', deploymentId)
-    .order('version_number', { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return (data || []) as DeploymentVersionRow[];
+  return fetchDeploymentVersions(deploymentId);
 }
 
 async function syncDeploymentCurrent(deployment: DeploymentForVersionEdit) {

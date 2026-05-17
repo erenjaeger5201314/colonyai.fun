@@ -4,15 +4,19 @@ import { randomUUID } from 'crypto';
 import {
   MAX_HTML_SIZE_BYTES,
   SHORT_CODE_PATTERN,
-  NO_STORE_CACHE_CONTROL,
   isValidHtmlContent,
   normalizeDescription,
   resolveCodeFromInput,
 } from '@/lib/deploy-config';
 import { createVersionedHtmlPath, getStoragePathFromFilePath } from '@/lib/storage';
-import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
+import { htmlResponse, jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
-import { fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
+import {
+  fetchDeploymentByCode,
+  fetchDeploymentVersion,
+  fetchDeploymentVersions,
+  getNextVersionNumber,
+} from '@/lib/deployment-queries';
 import { selectPrimaryVersion } from '@/lib/version-selection';
 
 export const dynamic = 'force-dynamic';
@@ -50,16 +54,7 @@ async function readHtmlContent(storagePath: string) {
 async function fetchRequestedVersion(deploymentId: string, requestedVersion: string | null) {
   if (!requestedVersion) return { version: null, error: null };
 
-  const versionQuery = supabase
-    .from('deployment_versions')
-    .select('*')
-    .eq('deployment_id', deploymentId);
-
-  const parsedVersionNumber = Number(requestedVersion);
-  const result = Number.isInteger(parsedVersionNumber) && parsedVersionNumber > 0
-    ? await versionQuery.eq('version_number', parsedVersionNumber).maybeSingle()
-    : await versionQuery.eq('id', requestedVersion).maybeSingle();
-
+  const result = await fetchDeploymentVersion(deploymentId, requestedVersion);
   return {
     version: (result.data || null) as DeploymentVersionRecord | null,
     error: result.error,
@@ -113,24 +108,21 @@ export async function GET(request: NextRequest) {
 
     let resolvedVersion = selectedVersion;
     if (!resolvedVersion) {
-      const { data: versions, error: versionsError } = await supabase
-        .from('deployment_versions')
-        .select('*')
-        .eq('deployment_id', deployment.id)
-        .order('version_number', { ascending: false });
-
-      if (versionsError) {
+      let versions: DeploymentVersionRecord[];
+      try {
+        versions = await fetchDeploymentVersions(deployment.id) as DeploymentVersionRecord[];
+      } catch (versionsError: unknown) {
         return jsonError({
           status: 500,
           code: 'DEPLOYMENT_VERSIONS_FETCH_FAILED',
           message: '版本历史读取失败。',
-          detail: versionsError.message,
+          detail: getErrorMessage(versionsError),
           requestId,
         });
       }
 
       resolvedVersion = selectPrimaryVersion(
-        (versions || []) as DeploymentVersionRecord[],
+        versions,
         deployment.current_version_id,
         deployment.primary_version_strategy || 'likes',
       );
@@ -153,13 +145,7 @@ export async function GET(request: NextRequest) {
     const shouldDownload = request.nextUrl.searchParams.get('download') === '1';
     if (shouldDownload) {
       const downloadFilename = selectedVersion?.filename || deployment.filename || `${code}.html`;
-      return new NextResponse(content, {
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${downloadFilename}"`,
-          'Cache-Control': NO_STORE_CACHE_CONTROL,
-        },
-      });
+      return htmlResponse(content, false, downloadFilename);
     }
 
     return NextResponse.json(

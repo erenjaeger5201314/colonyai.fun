@@ -115,6 +115,9 @@ Other useful endpoints include:
 - `PATCH /api/deploys/:code/primary-strategy`
 
 See `/api-docs` in the running app for agent-oriented guidance.
+New short-link responses also include `agentGuideUrl`
+(`https://www.htmlcode.fun/s/htmlcode-fun-guide`) so agents can pass along a
+stable guide for using htmlcode.fun.
 
 ## Common Commands
 

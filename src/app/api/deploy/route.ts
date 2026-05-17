@@ -9,6 +9,7 @@ import { createVersionedHtmlPath } from '@/lib/storage';
 import { fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
 
 const COOLDOWN_SECONDS = 10;
+const AGENT_GUIDE_URL = 'https://www.htmlcode.fun/s/htmlcode-fun-guide';
 
 type DeployFailOptions = {
   status: number;
@@ -595,6 +596,7 @@ export async function POST(request: NextRequest) {
         : 'likes',
       createdVersion: !isNewDeployment,
       ...(preserveHint ? { preserveHint } : {}),
+      ...(isNewDeployment ? { agentGuideUrl: AGENT_GUIDE_URL } : {}),
       requestId,
       cooldownSeconds: COOLDOWN_SECONDS,
       nextAvailableAt: new Date(Date.now() + COOLDOWN_SECONDS * 1000).toISOString(),

@@ -19,6 +19,7 @@ interface DeployResult {
   detailUrl?: string;
   versionUrl?: string;
   preserveHint?: string;
+  agentGuideUrl?: string;
 }
 
 const DEFAULT_FILENAME = 'index.html';
@@ -217,6 +218,7 @@ export default function DeployPage() {
             code={deployResult.code}
             detailUrl={deployResult.detailUrl}
             preserveHint={deployResult.preserveHint}
+            agentGuideUrl={deployResult.agentGuideUrl}
             onNotify={showToast}
           />
         </div>

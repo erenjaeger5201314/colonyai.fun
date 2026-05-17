@@ -35,6 +35,9 @@ async function main() {
   if (!deployRes.ok || !deploy.success) {
     throw new Error(`deploy failed: ${JSON.stringify(deploy)}`);
   }
+  if (deploy.agentGuideUrl !== 'https://www.htmlcode.fun/s/htmlcode-fun-guide') {
+    throw new Error(`agentGuideUrl missing: ${JSON.stringify(deploy)}`);
+  }
 
   const readRes = await fetch(`${BASE_URL}/api/deploy/content?code=${code}`);
   const read = await readRes.json();

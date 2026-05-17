@@ -12,10 +12,11 @@ interface DeploySuccessProps {
   code: string;
   detailUrl?: string;
   preserveHint?: string;
+  agentGuideUrl?: string;
   onNotify?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHint, onNotify }: DeploySuccessProps) {
+export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHint, agentGuideUrl, onNotify }: DeploySuccessProps) {
   const { isZh } = useLanguage();
 
   const text = isZh
@@ -33,6 +34,7 @@ export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHi
         preserveTitle: '永久保留',
         preserveDefault: '打开 htmlcode.fun 项目详情页并手动点赞后，项目会永久保留。',
         openDetail: '去点赞保留',
+        agentGuide: 'Agent 使用指南',
       }
     : {
         copied: 'Link copied to clipboard',
@@ -48,6 +50,7 @@ export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHi
         preserveTitle: 'Permanent preservation',
         preserveDefault: 'Open the htmlcode.fun detail page and manually like the project to preserve it permanently.',
         openDetail: 'Like to preserve',
+        agentGuide: 'Agent guide',
       };
 
   const handleCopy = () => {
@@ -119,6 +122,17 @@ export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHi
           <ExternalLink className="mr-1 h-4 w-4" />
           {text.openDetail}
         </a>
+        {agentGuideUrl && (
+          <a
+            href={agentGuideUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-4 mt-3 inline-flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-900"
+          >
+            <ExternalLink className="mr-1 h-4 w-4" />
+            {text.agentGuide}
+          </a>
+        )}
       </div>
 
       <div className="mt-8">

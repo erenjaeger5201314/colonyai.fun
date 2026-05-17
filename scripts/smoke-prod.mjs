@@ -8,6 +8,7 @@ async function main() {
   const deployPayload = {
     filename: 'index.html',
     title: 'smoke-test',
+    description: 'Production smoke test page created by the agent.',
     content: '<!doctype html><html><body><h1>Smoke Initial</h1></body></html>',
     enableCustomCode: true,
     customCode: code,
@@ -49,6 +50,7 @@ async function main() {
       content: '<!doctype html><html><body><h1>Smoke Updated</h1></body></html>',
       filename: 'index-updated.html',
       title: 'smoke-test-updated',
+      description: 'Updated production smoke test page created by the agent.',
     }),
   });
 

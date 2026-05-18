@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/cleanup-expired-deployments",
-      "schedule": "0 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }

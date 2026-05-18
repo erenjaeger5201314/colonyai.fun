@@ -6,7 +6,7 @@ import { getErrorMessage } from '@/lib/error';
 
 export const dynamic = 'force-dynamic';
 
-const CLEANUP_LIMIT = 50;
+const CLEANUP_LIMIT = 300;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;

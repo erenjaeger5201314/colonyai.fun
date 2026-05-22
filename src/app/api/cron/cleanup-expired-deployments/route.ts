@@ -7,11 +7,46 @@ import { getErrorMessage } from '@/lib/error';
 export const dynamic = 'force-dynamic';
 
 const CLEANUP_LIMIT = 300;
+const CANDIDATE_PAGE_SIZE = 500;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return request.headers.get('authorization') === `Bearer ${secret}`;
+  const authHeader = request.headers.get('authorization');
+  return Boolean(secret && authHeader === `Bearer ${secret}`);
+}
+
+async function fetchCleanupCandidates() {
+  const candidates: Array<{ id: string; code: string; like_count: number | null }> = [];
+  let from = 0;
+
+  while (candidates.length < CLEANUP_LIMIT) {
+    const { data, error } = await supabase
+      .from('deployments')
+      .select('id, code, like_count')
+      .or('like_count.eq.0,like_count.is.null')
+      .order('created_at', { ascending: true })
+      .range(from, from + CANDIDATE_PAGE_SIZE - 1);
+
+    if (error) throw error;
+    if (!data?.length) break;
+
+    const versionCounts = new Map<string, number>();
+    const { data: versionRows, error: versionError } = await supabase
+      .from('deployment_versions')
+      .select('deployment_id')
+      .in('deployment_id', data.map((deployment) => deployment.id));
+
+    if (versionError) throw versionError;
+    for (const row of versionRows || []) {
+      versionCounts.set(row.deployment_id, (versionCounts.get(row.deployment_id) || 0) + 1);
+    }
+
+    candidates.push(...data.filter((deployment) => (versionCounts.get(deployment.id) || 0) === 1));
+    if (data.length < CANDIDATE_PAGE_SIZE) break;
+    from += CANDIDATE_PAGE_SIZE;
+  }
+
+  return candidates.slice(0, CLEANUP_LIMIT);
 }
 
 export async function GET(request: NextRequest) {
@@ -24,42 +59,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { data: candidates, error } = await supabase
-      .from('deployments')
-      .select('id, code, like_count')
-      .or('like_count.eq.0,like_count.is.null')
-      .order('created_at', { ascending: true })
-      .limit(CLEANUP_LIMIT);
-
-    if (error) {
-      return jsonError({
-        status: 500,
-        code: 'UNPRESERVED_DEPLOYMENTS_FETCH_FAILED',
-        message: '读取待清理部署失败。',
-        detail: error.message,
-      });
-    }
-
+    const candidates = await fetchCleanupCandidates();
     const deleted: Array<{ id: string; code: string }> = [];
-    const skipped: Array<{ id: string; code: string; reason: string }> = [];
     const failed: Array<{ id: string; code: string; error: string }> = [];
 
-    for (const deployment of candidates || []) {
-      const { count, error: countError } = await supabase
-        .from('deployment_versions')
-        .select('id', { count: 'exact', head: true })
-        .eq('deployment_id', deployment.id);
-
-      if (countError) {
-        failed.push({ id: deployment.id, code: deployment.code, error: countError.message });
-        continue;
-      }
-
-      if ((count ?? 0) !== 1) {
-        skipped.push({ id: deployment.id, code: deployment.code, reason: 'has_versions' });
-        continue;
-      }
-
+    for (const deployment of candidates) {
       try {
         await deleteDeploymentFilesAndRecord({ id: deployment.id, code: deployment.code });
         deleted.push({ id: deployment.id, code: deployment.code });
@@ -68,14 +72,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log('cleanup-unpreserved-deployments', {
+      checked: candidates.length,
+      deletedCount: deleted.length,
+      failedCount: failed.length,
+    });
+
     return NextResponse.json({
       success: true,
-      checked: candidates?.length || 0,
+      checked: candidates.length,
       deletedCount: deleted.length,
-      skippedCount: skipped.length,
       failedCount: failed.length,
       deleted,
-      skipped,
       failed,
     });
   } catch (error: unknown) {

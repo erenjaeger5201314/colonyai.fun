@@ -151,6 +151,7 @@ export async function PATCH(
 
     const patch: Record<string, unknown> = {};
     let oldStoragePath: string | null = null;
+    const updatedAt = new Date().toISOString();
 
     if (hasContent) {
       const normalizedContent = body.content.trim();
@@ -226,6 +227,8 @@ export async function PATCH(
       patch.status = requestedStatus;
     }
 
+    patch.updated_at = updatedAt;
+
     if (Object.keys(patch).length === 0) {
       return jsonError({
         status: 400,
@@ -274,6 +277,7 @@ export async function PATCH(
         currentVersionId: currentVersion?.id ?? null,
         fileSize: updatedVersion.file_size,
         description: updatedVersion.description,
+        updatedAt,
       },
       withNoStoreHeaders(),
     );

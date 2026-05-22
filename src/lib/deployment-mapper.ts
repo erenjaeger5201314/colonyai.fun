@@ -34,6 +34,7 @@ export function mapDeploymentVersionRow(row: DeploymentVersionRow): DeploymentVe
     filePath: row.file_path,
     fileSize: row.file_size,
     createdAt: row.created_at,
+    updatedAt: row.updated_at || row.created_at,
     likeCount: row.like_count ?? 0,
     status: row.status || 'active',
   };

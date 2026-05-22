@@ -30,6 +30,7 @@ type DeploymentVersionRecord = {
   title: string | null;
   description: string | null;
   created_at: string;
+  updated_at?: string | null;
   like_count: number | null;
   status?: 'active' | 'inactive' | null;
 };
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest) {
         locked: Number(deployment.like_count ?? 0) > 0,
         content,
         createdAt: resolvedVersion?.created_at || deployment.created_at,
-        updatedAt: deployment.updated_at,
+        updatedAt: resolvedVersion?.updated_at || deployment.updated_at,
       },
       withNoStoreHeaders()
     );
@@ -354,7 +355,6 @@ export async function PATCH(request: NextRequest) {
         filename: nextFilename,
         file_path: publicUrl,
         file_size: fileSize,
-        expires_at: null,
         updated_at: updatedAt,
       })
       .eq('id', deployment.id);

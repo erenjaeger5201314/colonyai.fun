@@ -6,6 +6,7 @@ import {
   Trash2,
   Eye,
   Calendar,
+  Clock,
   ExternalLink,
   PowerOff,
   PlayCircle,
@@ -118,6 +119,8 @@ export default function DeploymentMarketplace({
             views: (count: number) => `${count} 次访问`,
             likes: (count: number) => `${count} 个赞`,
             iterations: (count: number) => `迭代 ${count} 次`,
+            createdAt: (date: string) => `创建 ${date}`,
+            updatedAt: (date: string) => `修改 ${date}`,
             detailTitle: '查看详情',
             likeProject: '点赞并锁定项目',
             likedProject: '取消点赞',
@@ -189,6 +192,8 @@ export default function DeploymentMarketplace({
             views: (count: number) => `${count} views`,
             likes: (count: number) => `${count} likes`,
             iterations: (count: number) => `${count} iterations`,
+            createdAt: (date: string) => `Created ${date}`,
+            updatedAt: (date: string) => `Modified ${date}`,
             detailTitle: 'View details',
             likeProject: 'Like and lock project',
             likedProject: 'Remove like',
@@ -715,7 +720,11 @@ export default function DeploymentMarketplace({
                 <div className="flex-1 space-y-2 text-sm text-slate-500">
                   <div className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4" />
-                    {formatDate(deploy.createdAt)}
+                    {text.createdAt(formatDate(deploy.createdAt))}
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4" />
+                    {text.updatedAt(formatDate(deploy.updatedAt))}
                   </div>
                   <div className="flex items-center">
                     <Eye className="mr-2 h-4 w-4" />

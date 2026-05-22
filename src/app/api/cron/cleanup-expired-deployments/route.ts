@@ -24,21 +24,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const nowIso = new Date().toISOString();
     const { data: candidates, error } = await supabase
       .from('deployments')
-      .select('id, code, like_count, expires_at')
-      .not('expires_at', 'is', null)
-      .lte('expires_at', nowIso)
-      .eq('like_count', 0)
-      .order('expires_at', { ascending: true })
+      .select('id, code, like_count')
+      .or('like_count.eq.0,like_count.is.null')
+      .order('created_at', { ascending: true })
       .limit(CLEANUP_LIMIT);
 
     if (error) {
       return jsonError({
         status: 500,
-        code: 'EXPIRED_DEPLOYMENTS_FETCH_FAILED',
-        message: '读取过期部署失败。',
+        code: 'UNPRESERVED_DEPLOYMENTS_FETCH_FAILED',
+        message: '读取待清理部署失败。',
         detail: error.message,
       });
     }
@@ -59,10 +56,6 @@ export async function GET(request: NextRequest) {
       }
 
       if ((count ?? 0) !== 1) {
-        await supabase
-          .from('deployments')
-          .update({ expires_at: null })
-          .eq('id', deployment.id);
         skipped.push({ id: deployment.id, code: deployment.code, reason: 'has_versions' });
         continue;
       }
@@ -88,8 +81,8 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     return jsonError({
       status: 500,
-      code: 'EXPIRED_DEPLOYMENTS_CLEANUP_FAILED',
-      message: '清理过期部署失败。',
+      code: 'UNPRESERVED_DEPLOYMENTS_CLEANUP_FAILED',
+      message: '清理未保留部署失败。',
       detail: getErrorMessage(error),
     });
   }

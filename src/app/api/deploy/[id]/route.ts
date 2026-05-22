@@ -121,7 +121,7 @@ export async function PATCH(
 
     const { error } = await supabase
       .from('deployments')
-      .update({ status })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {

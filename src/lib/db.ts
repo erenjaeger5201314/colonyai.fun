@@ -51,6 +51,7 @@ export interface DeploymentVersion {
   filePath: string;
   fileSize: number | null;
   createdAt: string;
+  updatedAt: string;
   likeCount: number;
   status: 'active' | 'inactive';
 }
@@ -87,6 +88,7 @@ export interface DeploymentVersionRow {
   file_path: string;
   file_size: number | null;
   created_at: string;
+  updated_at?: string | null;
   like_count: number | null;
   status?: 'active' | 'inactive' | null;
 }

@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Calendar,
   Check,
+  Clock,
   Code2,
   Copy,
   Download,
@@ -80,6 +81,8 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
             views: (count: number) => `${count} 次访问`,
             likes: (count: number) => `${count} 个赞`,
             versionLikes: (count: number) => `${count} 赞`,
+            createdAt: (date: string) => `创建 ${date}`,
+            updatedAt: (date: string) => `修改 ${date}`,
             active: '运行中',
             inactive: '已下架',
             versionInactive: '已下架',
@@ -171,6 +174,8 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
             views: (count: number) => `${count} views`,
             likes: (count: number) => `${count} likes`,
             versionLikes: (count: number) => `${count} likes`,
+            createdAt: (date: string) => `Created ${date}`,
+            updatedAt: (date: string) => `Modified ${date}`,
             active: 'Active',
             inactive: 'Offline',
             versionInactive: 'Offline',
@@ -1019,7 +1024,11 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
           <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
             <span className="inline-flex items-center">
               <Calendar className="mr-1.5 h-4 w-4" />
-              {formatDate(deploy.createdAt)}
+              {text.createdAt(formatDate(deploy.createdAt))}
+            </span>
+            <span className="inline-flex items-center">
+              <Clock className="mr-1.5 h-4 w-4" />
+              {text.updatedAt(formatDate(deploy.updatedAt))}
             </span>
             <span className="inline-flex items-center">
               <Eye className="mr-1.5 h-4 w-4" />
@@ -1190,7 +1199,10 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
                         <p className="mt-1 line-clamp-2 text-xs text-slate-500">
                           {version.description || version.title || version.filename}
                         </p>
-                        <p className="mt-2 text-xs text-slate-400">{formatDate(version.createdAt)}</p>
+                        <div className="mt-2 space-y-1 text-xs text-slate-400">
+                          <p>{text.createdAt(formatDate(version.createdAt))}</p>
+                          <p>{text.updatedAt(formatDate(version.updatedAt))}</p>
+                        </div>
                         <p className="mt-1 inline-flex items-center text-xs text-slate-400">
                           <Heart className="mr-1 h-3.5 w-3.5" />
                           {text.versionLikes(version.likeCount)}

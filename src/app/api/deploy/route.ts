@@ -7,7 +7,6 @@ import { getErrorMessage } from '@/lib/error';
 import { jsonError } from '@/lib/api-response';
 import { createVersionedHtmlPath } from '@/lib/storage';
 import { fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
-import { getNewDeploymentExpiresAt } from '@/lib/deployment-retention';
 
 const COOLDOWN_SECONDS = 10;
 const AGENT_GUIDE_URL = 'https://www.htmlcode.fun/s/htmlcode-fun-guide';
@@ -431,7 +430,6 @@ export async function POST(request: NextRequest) {
 
     let deploymentId: string;
     let versionId: string | null = null;
-    const expiresAt = existingDeployment ? null : getNewDeploymentExpiresAt();
 
     if (existingDeployment) {
       deploymentId = String(existingDeployment.id);
@@ -470,7 +468,6 @@ export async function POST(request: NextRequest) {
           filename: normalizedFilename,
           file_path: htmlPublicUrl,
           file_size: fileSize,
-          expires_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', deploymentId);
@@ -490,15 +487,14 @@ export async function POST(request: NextRequest) {
       const { data, error: dbError } = await supabase
         .from('deployments')
         .insert({
-        code,
-        title: versionTitle,
-        description: versionDescription,
-        filename: normalizedFilename,
-        file_path: htmlPublicUrl, // Storing the public URL for easy access
-        file_size: fileSize,
-        qr_code_path: qrPublicUrl,
-        status: 'active',
-        expires_at: expiresAt
+          code,
+          title: versionTitle,
+          description: versionDescription,
+          filename: normalizedFilename,
+          file_path: htmlPublicUrl,
+          file_size: fileSize,
+          qr_code_path: qrPublicUrl,
+          status: 'active'
         })
         .select()
         .single();
@@ -596,7 +592,6 @@ export async function POST(request: NextRequest) {
       versionNumber,
       currentVersionId: versionId,
       versionCount: versionNumber,
-      expiresAt,
       primaryVersionStrategy: typeof existingDeployment?.primary_version_strategy === 'string'
         ? existingDeployment.primary_version_strategy
         : 'likes',

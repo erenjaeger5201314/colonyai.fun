@@ -225,6 +225,7 @@ export default function DeploymentMarketplace({
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [corsEnabled, setCorsEnabled] = useState(false);
   const pageSize = 12;
   const [toast, setToast] = useState<{
     open: boolean;
@@ -304,6 +305,36 @@ export default function DeploymentMarketplace({
   useEffect(() => {
     fetchDeploys();
   }, [fetchDeploys]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCorsState = () => {
+      fetch('/api/cors', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && typeof data?.enabled === 'boolean') {
+            setCorsEnabled(data.enabled);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setCorsEnabled(false);
+        });
+    };
+
+    const handleCorsState = (event: Event) => {
+      const enabled = (event as CustomEvent<{ enabled?: unknown }>).detail?.enabled;
+      if (typeof enabled === 'boolean') setCorsEnabled(enabled);
+    };
+
+    fetchCorsState();
+    window.addEventListener('focus', fetchCorsState);
+    window.addEventListener('htmlcode:cors-state', handleCorsState);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', fetchCorsState);
+      window.removeEventListener('htmlcode:cors-state', handleCorsState);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -804,11 +835,11 @@ export default function DeploymentMarketplace({
                     </button>
                     <button
                       onClick={() => handleDelete(deploy.id)}
-                      disabled={deploy.likeCount > 0}
+                      disabled={deploy.likeCount > 0 && !corsEnabled}
                       className={`rounded-md p-2 transition-colors ${
-                        deploy.likeCount > 0 ? 'cursor-not-allowed text-slate-300' : 'text-slate-400 hover:text-rose-600'
+                        deploy.likeCount > 0 && !corsEnabled ? 'cursor-not-allowed text-slate-300' : 'text-slate-400 hover:text-rose-600'
                       }`}
-                      title={deploy.likeCount > 0 ? text.lockedProject : text.deleteForever}
+                      title={deploy.likeCount > 0 && !corsEnabled ? text.lockedProject : text.deleteForever}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

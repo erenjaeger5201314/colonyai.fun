@@ -101,6 +101,7 @@ export default function CorsToggle() {
       const data = await res.json();
       if (typeof data?.enabled === 'boolean') {
         setEnabled(data.enabled);
+        window.dispatchEvent(new CustomEvent('htmlcode:cors-state', { detail: { enabled: data.enabled } }));
       }
       closeDialog();
     } catch {

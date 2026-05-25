@@ -5,6 +5,7 @@ import { getErrorMessage, isMissingLikeCountError } from '@/lib/error';
 import { jsonError } from '@/lib/api-response';
 import { selectPrimaryVersion } from '@/lib/version-selection';
 import { deleteDeploymentFilesAndRecord } from '@/lib/deployment-delete';
+import { isCorsEnabled } from '@/lib/cors-state';
 
 async function fetchDeploymentLockState(id: string) {
   const { data, error } = await supabase
@@ -180,7 +181,7 @@ export async function DELETE(
 
     const { code } = deployment;
 
-    if (Number(deployment.like_count ?? 0) > 0) {
+    if (Number(deployment.like_count ?? 0) > 0 && !(await isCorsEnabled())) {
       return jsonError({
         status: 423,
         code: 'DEPLOYMENT_LOCKED_BY_LIKE',

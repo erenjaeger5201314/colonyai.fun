@@ -251,6 +251,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<Record<string, string>>({});
   const [likedVersionIds, setLikedVersionIds] = useState<Set<string>>(new Set());
+  const [corsEnabled, setCorsEnabled] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -319,6 +320,36 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
     };
     load();
   }, [fetchDeploy, id, router, text.fetchFailed]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCorsState = () => {
+      fetch('/api/cors', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && typeof data?.enabled === 'boolean') {
+            setCorsEnabled(data.enabled);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setCorsEnabled(false);
+        });
+    };
+
+    const handleCorsState = (event: Event) => {
+      const enabled = (event as CustomEvent<{ enabled?: unknown }>).detail?.enabled;
+      if (typeof enabled === 'boolean') setCorsEnabled(enabled);
+    };
+
+    fetchCorsState();
+    window.addEventListener('focus', fetchCorsState);
+    window.addEventListener('htmlcode:cors-state', handleCorsState);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', fetchCorsState);
+      window.removeEventListener('htmlcode:cors-state', handleCorsState);
+    };
+  }, []);
 
   const versions = useMemo(() => deploy?.versions || [], [deploy?.versions]);
   const activeVersions = useMemo(() => versions.filter((version) => version.status === 'active'), [versions]);
@@ -533,7 +564,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
   };
 
   const handleDelete = () => {
-    if (deploy && deploy.likeCount > 0) {
+    if (deploy && deploy.likeCount > 0 && !corsEnabled) {
       showToast(text.lockedByLike, 'info');
       return;
     }
@@ -1109,9 +1140,9 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
             <button
               onClick={handleDelete}
-              disabled={deploy.likeCount > 0}
+              disabled={deploy.likeCount > 0 && !corsEnabled}
               className="inline-flex items-center rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-              title={deploy.likeCount > 0 ? text.lockedByLike : undefined}
+              title={deploy.likeCount > 0 && !corsEnabled ? text.lockedByLike : undefined}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               {text.deleteForever}

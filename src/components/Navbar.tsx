@@ -109,7 +109,7 @@ export default function Navbar() {
         <div className="flex min-w-0 items-center gap-4 md:gap-8">
           <Link href="/" className="group flex shrink-0 items-center transition-transform hover:scale-105">
             <LogoMark />
-            <span className="ml-3 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">htmlcode.fun</span>
+            <span className="ml-3 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">colonyai.fun</span>
           </Link>
           <div className="hidden items-center space-x-6 md:flex">
             <Link href="/" className="text-sm font-semibold text-slate-600 transition-colors hover:text-sky-800">

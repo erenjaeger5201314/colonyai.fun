@@ -1,8 +1,8 @@
-# HTMLCode.fun
+# ColonyAI.fun
 
-HTMLCode.fun is a Next.js app for publishing standalone HTML pages to a shareable URL. It supports manual uploads from the browser and structured API uploads from agents, then stores HTML files, metadata, versions, likes, and QR-code assets in Supabase.
+ColonyAI.fun is a Next.js app for publishing standalone HTML pages to a shareable URL. It supports manual uploads from the browser and structured API uploads from agents, then stores HTML files, metadata, versions, likes, and QR-code assets in Supabase.
 
-Production: https://htmlcode.fun
+Production: https://colonyai.fun
 
 ## What It Does
 
@@ -116,8 +116,8 @@ Other useful endpoints include:
 
 See `/api-docs` in the running app for agent-oriented guidance.
 New short-link responses also include `agentGuideUrl`
-(`https://www.htmlcode.fun/s/htmlcode-fun-guide`) so agents can pass along a
-stable guide for using htmlcode.fun.
+(`https://www.colonyai.fun/s/colonyai-fun-guide`) so agents can pass along a
+stable guide for using colonyai.fun.
 Daily cleanup removes single-version deployments that have neither a manual like
 nor an appended version.
 

@@ -10,7 +10,7 @@ interface LanguageContextValue {
   setLanguage: (language: Language) => void;
 }
 
-const STORAGE_KEY = 'htmlcode.fun-language';
+const STORAGE_KEY = 'colonyai.fun-language';
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 

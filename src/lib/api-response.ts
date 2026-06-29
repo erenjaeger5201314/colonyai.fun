@@ -73,8 +73,8 @@ export function manualLikeRequiredError(action: 'like' | 'unlike') {
     status: 403,
     code: action === 'like' ? 'MANUAL_LIKE_REQUIRED' : 'MANUAL_UNLIKE_REQUIRED',
     message: action === 'like'
-      ? '点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 点赞。'
-      : '取消点赞只能从 htmlcode.fun 网页内手动操作，Agent 不能通过 API 取消点赞。',
+      ? '点赞只能从 colonyai.fun 网页内手动操作，Agent 不能通过 API 点赞。'
+      : '取消点赞只能从 colonyai.fun 网页内手动操作，Agent 不能通过 API 取消点赞。',
     hint: action === 'like'
       ? '请把部署详情页链接交给用户，让用户在浏览器里手动点赞。'
       : '请让用户在浏览器里手动操作。',

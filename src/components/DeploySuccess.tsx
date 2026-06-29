@@ -32,7 +32,7 @@ export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHi
         downloadQrcode: '下载二维码',
         backToDeploy: '查看部署历史',
         preserveTitle: '永久保留',
-        preserveDefault: '打开 htmlcode.fun 项目详情页并手动点赞后，项目会永久保留。',
+        preserveDefault: '打开 colonyai.fun 项目详情页并手动点赞后，项目会永久保留。',
         openDetail: '去点赞保留',
         agentGuide: 'Agent 使用指南',
       }
@@ -48,7 +48,7 @@ export default function DeploySuccess({ url, qrCode, code, detailUrl, preserveHi
         downloadQrcode: 'Download QR Code',
         backToDeploy: 'Back to Deployments',
         preserveTitle: 'Permanent preservation',
-        preserveDefault: 'Open the htmlcode.fun detail page and manually like the project to preserve it permanently.',
+        preserveDefault: 'Open the colonyai.fun detail page and manually like the project to preserve it permanently.',
         openDetail: 'Like to preserve',
         agentGuide: 'Agent guide',
       };

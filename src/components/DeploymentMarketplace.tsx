@@ -328,17 +328,17 @@ export default function DeploymentMarketplace({
 
     fetchCorsState();
     window.addEventListener('focus', fetchCorsState);
-    window.addEventListener('htmlcode:cors-state', handleCorsState);
+    window.addEventListener('colonyai:cors-state', handleCorsState);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', fetchCorsState);
-      window.removeEventListener('htmlcode:cors-state', handleCorsState);
+      window.removeEventListener('colonyai:cors-state', handleCorsState);
     };
   }, []);
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem('htmlcode-liked-deployments');
+      const stored = window.localStorage.getItem('colonyai-liked-deployments');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -509,13 +509,13 @@ export default function DeploymentMarketplace({
 
   const persistLikedIds = (nextLikedIds: Set<string>) => {
     setLikedIds(nextLikedIds);
-    window.localStorage.setItem('htmlcode-liked-deployments', JSON.stringify(Array.from(nextLikedIds)));
+    window.localStorage.setItem('colonyai-liked-deployments', JSON.stringify(Array.from(nextLikedIds)));
   };
 
   const persistLikedVersionFromResponse = (versionId: unknown, alreadyLiked: boolean) => {
     if (typeof versionId !== 'string') return;
     try {
-      const stored = window.localStorage.getItem('htmlcode-liked-deployment-versions');
+      const stored = window.localStorage.getItem('colonyai-liked-deployment-versions');
       const parsed = stored ? JSON.parse(stored) : [];
       const versionIds = new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
       if (alreadyLiked) {
@@ -523,9 +523,9 @@ export default function DeploymentMarketplace({
       } else {
         versionIds.add(versionId);
       }
-      window.localStorage.setItem('htmlcode-liked-deployment-versions', JSON.stringify(Array.from(versionIds)));
+      window.localStorage.setItem('colonyai-liked-deployment-versions', JSON.stringify(Array.from(versionIds)));
     } catch {
-      window.localStorage.setItem('htmlcode-liked-deployment-versions', JSON.stringify(alreadyLiked ? [] : [versionId]));
+      window.localStorage.setItem('colonyai-liked-deployment-versions', JSON.stringify(alreadyLiked ? [] : [versionId]));
     }
   };
 

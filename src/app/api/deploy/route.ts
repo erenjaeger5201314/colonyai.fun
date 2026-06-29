@@ -9,7 +9,7 @@ import { createVersionedHtmlPath } from '@/lib/storage';
 import { fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
 
 const COOLDOWN_SECONDS = 10;
-const AGENT_GUIDE_URL = 'https://www.htmlcode.fun/s/htmlcode-fun-guide';
+const AGENT_GUIDE_URL = 'https://www.colonyai.fun/s/colonyai-fun-guide';
 
 type DeployFailOptions = {
   status: number;
@@ -576,7 +576,7 @@ export async function POST(request: NextRequest) {
     const versionUrl = `${protocol}://${host}/s/${code}/v/${versionNumber}`;
     const isNewDeployment = !existingDeployment;
     const preserveHint = isNewDeployment
-      ? `请打开 ${detailUrl} 或 ${deployUrl}，在 htmlcode.fun 网页内手动点赞；被点赞的版本会永久保留。后续更新请复用短链后缀 ${code}，传 enableCustomCode=true、customCode="${code}"、createVersion=true，即可在同一个主域名短链下持续迭代。`
+      ? `请打开 ${detailUrl} 或 ${deployUrl}，在 colonyai.fun 网页内手动点赞；被点赞的版本会永久保留。后续更新请复用短链后缀 ${code}，传 enableCustomCode=true、customCode="${code}"、createVersion=true，即可在同一个主域名短链下持续迭代。`
       : undefined;
 
     return NextResponse.json({

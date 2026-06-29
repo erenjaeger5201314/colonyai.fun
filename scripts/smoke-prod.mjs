@@ -1,4 +1,4 @@
-const BASE_URL = process.env.SMOKE_BASE_URL || 'https://www.htmlcode.fun';
+const BASE_URL = process.env.SMOKE_BASE_URL || 'https://www.colonyai.fun';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -35,7 +35,7 @@ async function main() {
   if (!deployRes.ok || !deploy.success) {
     throw new Error(`deploy failed: ${JSON.stringify(deploy)}`);
   }
-  if (deploy.agentGuideUrl !== 'https://www.htmlcode.fun/s/htmlcode-fun-guide') {
+  if (deploy.agentGuideUrl !== 'https://www.colonyai.fun/s/colonyai-fun-guide') {
     throw new Error(`agentGuideUrl missing: ${JSON.stringify(deploy)}`);
   }
 

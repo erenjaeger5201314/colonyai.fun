@@ -8,14 +8,14 @@ import { useLanguage } from '@/components/LanguageProvider';
 
 const zhPromptRows = [
   '帮我做一个打砖块小游戏|把这份日报做成网页|生成一个手机端抽签页面|做个 AI 对话型登录页|用 HTML 做产品定价页|做一个课堂计分板|把表格变成可视化看板|做个活动报名页',
-  '帮我部署到 htmlcode.fun|生成后直接给我链接|顺手写个项目简介|代码不要变，样式升级|做一个可分享的单页|把这段文案做成海报页|加一个倒计时组件|做个客户演示 Demo',
+  '帮我部署到 colonyai.fun|生成后直接给我链接|顺手写个项目简介|代码不要变，样式升级|做一个可分享的单页|把这段文案做成海报页|加一个倒计时组件|做个客户演示 Demo',
   '做一个 SaaS 状态页|把需求整理成 HTML 工具|生成一个 API 测试页面|做个二维码落地页|帮我上线到应用商城|做一个作品集页面|把 Markdown 转成漂亮网页|做个每日待办板',
-  '做个生日祝福网页|帮我生成小游戏排行榜|做一个会议议程页|把报价单做成网页|做个品牌介绍页|生成一个问卷结果页|做一个课程表页面|帮我做灵感收集墙',
+  '做个生日祝福网页|帮我生成小游戏排行榜|做一个会议议程页|把报价单做成网页|做个 brand 介绍页|生成一个问卷结果页|做一个课程表页面|帮我做灵感收集墙',
 ].map((row) => row.split('|'));
 
 const enPromptRows = [
   'Build a tiny arcade game|Turn this report into a webpage|Make a mobile raffle page|Create an AI-style login screen|Design a pricing page|Build a classroom scoreboard|Turn data into a dashboard|Create an event signup page',
-  'Deploy it to htmlcode.fun|Give me the live link|Add a short project description|Keep the code, polish the UI|Make a shareable one-page app|Turn this copy into a poster page|Add a countdown widget|Build a client demo',
+  'Deploy it to colonyai.fun|Give me the live link|Add a short project description|Keep the code, polish the UI|Make a shareable one-page app|Turn this copy into a poster page|Add a countdown widget|Build a client demo',
   'Make a SaaS status page|Package this idea as an HTML tool|Create an API test page|Build a QR landing page|Publish it to the marketplace|Make a portfolio page|Convert Markdown to a polished page|Build a daily task board',
   'Make a birthday greeting page|Add a mini-game leaderboard|Create a conference agenda|Turn a quote into a webpage|Build a brand intro page|Show survey results beautifully|Make a timetable page|Create an inspiration wall',
 ].map((row) => row.split('|'));
@@ -104,7 +104,7 @@ export default function Home() {
     ? {
         badge: '开放 HTML 应用商城',
         title: '部署与分享',
-        highlight: 'htmlcode.fun 应用',
+        highlight: 'colonyai.fun 应用',
         subtitle: '把想法直接告诉 Agent：它生成 HTML、调用 API 部署，然后把可访问链接交给你。',
         deploy: '前往手动部署',
         docs: '查看 API 文档',
@@ -113,7 +113,7 @@ export default function Home() {
     : {
         badge: 'Open HTML App Marketplace',
         title: 'Deploy and Share',
-        highlight: 'htmlcode.fun Apps',
+        highlight: 'colonyai.fun Apps',
         subtitle: 'Tell your agent what you need. It can generate HTML, deploy through the API, and return a live link.',
         deploy: 'Go to Manual Deploy',
         docs: 'View API Docs',

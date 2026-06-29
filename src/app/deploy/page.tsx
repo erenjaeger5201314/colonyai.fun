@@ -294,8 +294,8 @@ export default function DeployPage() {
                     onChange={(e) => handleContentChange(e.target.value)}
                     placeholder={
                       language === 'zh'
-                        ? '<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <title>我的页面</title>\n  </head>\n  <body>\n    <h1>Hello htmlcode.fun</h1>\n  </body>\n</html>'
-                        : '<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Hello htmlcode.fun</h1>\n  </body>\n</html>'
+                        ? '<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <title>我的页面</title>\n  </head>\n  <body>\n    <h1>Hello colonyai.fun</h1>\n  </body>\n</html>'
+                        : '<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Hello colonyai.fun</h1>\n  </body>\n</html>'
                     }
                     className="min-h-[320px] w-full rounded-lg border border-slate-300 px-3 py-3 text-sm text-slate-900 outline-none ring-sky-300 transition focus:border-sky-400 focus:ring-2"
                     spellCheck={false}

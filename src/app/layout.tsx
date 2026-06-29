@@ -15,7 +15,7 @@ const notoSansSC = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
-  title: 'htmlcode.fun - HTML 应用商城',
+  title: 'colonyai.fun - HTML 应用商城',
   description: '部署、管理和分享 HTML 应用的开放平台',
 };
 

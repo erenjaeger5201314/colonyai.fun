@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         status: 400,
         code: 'INVALID_CODE_OR_URL',
         message: '请提供有效的 code 或部署 url。',
-        detail: '示例: ?code=abc123 或 ?url=https://www.htmlcode.fun/s/abc123',
+        detail: '示例: ?code=abc123 或 ?url=https://www.colonyai.fun/s/abc123',
         requestId,
       });
     }

@@ -343,11 +343,11 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
     fetchCorsState();
     window.addEventListener('focus', fetchCorsState);
-    window.addEventListener('htmlcode:cors-state', handleCorsState);
+    window.addEventListener('colonyai:cors-state', handleCorsState);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', fetchCorsState);
-      window.removeEventListener('htmlcode:cors-state', handleCorsState);
+      window.removeEventListener('colonyai:cors-state', handleCorsState);
     };
   }, []);
 
@@ -390,7 +390,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem('htmlcode-liked-deployment-versions');
+      const stored = window.localStorage.getItem('colonyai-liked-deployment-versions');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -628,7 +628,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
   const persistLikedVersionIds = (nextLikedIds: Set<string>) => {
     setLikedVersionIds(nextLikedIds);
-    window.localStorage.setItem('htmlcode-liked-deployment-versions', JSON.stringify(Array.from(nextLikedIds)));
+    window.localStorage.setItem('colonyai-liked-deployment-versions', JSON.stringify(Array.from(nextLikedIds)));
   };
 
   const handleLikeVersion = async (version: DeploymentVersion, useDeploymentEndpoint = false) => {

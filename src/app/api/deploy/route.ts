@@ -6,7 +6,7 @@ import { MAX_HTML_SIZE_BYTES, SHORT_CODE_PATTERN, isValidHtmlContent, normalizeD
 import { getErrorMessage } from '@/lib/error';
 import { jsonError } from '@/lib/api-response';
 import { createVersionedHtmlPath } from '@/lib/storage';
-import { fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
+import { appendVersionAndPromote, fetchDeploymentByCode, getNextVersionNumber } from '@/lib/deployment-queries';
 
 const COOLDOWN_SECONDS = 10;
 const AGENT_GUIDE_URL = 'https://www.colonyai.fun/s/colonyai-fun-guide';
@@ -433,55 +433,28 @@ export async function POST(request: NextRequest) {
 
     if (existingDeployment) {
       deploymentId = String(existingDeployment.id);
-      const { data: version, error: versionError } = await supabase
-        .from('deployment_versions')
-        .insert({
-          deployment_id: deploymentId,
-          version_number: versionNumber,
-          title: versionTitle,
-          description: versionDescription,
-          filename: normalizedFilename,
-          file_path: htmlPublicUrl,
-          file_size: fileSize,
-        })
-        .select()
-        .single();
+      const { version, stage, error: appendError } = await appendVersionAndPromote({
+        deploymentId,
+        versionNumber,
+        title: versionTitle,
+        description: versionDescription,
+        filename: normalizedFilename,
+        filePath: htmlPublicUrl,
+        fileSize,
+      });
 
-      if (versionError || !version) {
+      if (appendError || !version) {
         return failResponse({
           status: 500,
-          code: 'DEPLOY_VERSION_INSERT_FAILED',
-          message: '新版本记录写入失败。',
-          detail: versionError?.message,
+          code: stage === 'pointer_update' ? 'DEPLOY_CURRENT_VERSION_UPDATE_FAILED' : 'DEPLOY_VERSION_INSERT_FAILED',
+          message: stage === 'pointer_update' ? '当前版本指针更新失败。' : '新版本记录写入失败。',
+          detail: appendError?.message,
           stage: 'database',
           requestId,
         });
       }
 
       versionId = version.id;
-      const { error: updateError } = await supabase
-        .from('deployments')
-        .update({
-          current_version_id: version.id,
-          title: versionTitle,
-          description: versionDescription,
-          filename: normalizedFilename,
-          file_path: htmlPublicUrl,
-          file_size: fileSize,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', deploymentId);
-
-      if (updateError) {
-        return failResponse({
-          status: 500,
-          code: 'DEPLOY_CURRENT_VERSION_UPDATE_FAILED',
-          message: '当前版本指针更新失败。',
-          detail: updateError.message,
-          stage: 'database',
-          requestId,
-        });
-      }
     } else {
       // 3. Save to Supabase DB
       const { data, error: dbError } = await supabase

@@ -1,4 +1,22 @@
 import { StorageError } from '@supabase/storage-js';
+import { supabase } from '@/lib/db';
+
+/**
+ * Download a stored HTML file and return its text.
+ * Shared by the serve routes and the content API, which each previously
+ * inlined the same download + `.text()` dance.
+ */
+export async function downloadDeploymentHtml(storagePath: string) {
+  const { data: fileData, error } = await supabase.storage
+    .from('deployments')
+    .download(storagePath);
+
+  if (error || !fileData) {
+    return { content: null, error: error?.message || 'File not found' };
+  }
+
+  return { content: await fileData.text(), error: null };
+}
 
 export function getStoragePathFromFilePath(filePath: unknown, fallbackCode: string) {
   const fallback = `html/${fallbackCode}.html`;

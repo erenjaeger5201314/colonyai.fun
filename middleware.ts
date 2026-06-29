@@ -28,6 +28,9 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// Only the API surface needs the dynamic CORS toggle. The /s/* content pages
+// are plain navigations/iframes that never rely on CORS headers, so keeping
+// them out of the matcher avoids a per-view settings lookup on the hot path.
 export const config = {
-  matcher: ['/api/:path*', '/s/:path*'],
+  matcher: ['/api/:path*'],
 };

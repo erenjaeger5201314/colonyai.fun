@@ -8,10 +8,11 @@ import {
   normalizeDescription,
   resolveCodeFromInput,
 } from '@/lib/deploy-config';
-import { createVersionedHtmlPath, getStoragePathFromFilePath } from '@/lib/storage';
+import { createVersionedHtmlPath, downloadDeploymentHtml, getStoragePathFromFilePath } from '@/lib/storage';
 import { htmlResponse, jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
 import {
+  appendVersionAndPromote,
   fetchDeploymentByCode,
   fetchDeploymentVersion,
   fetchDeploymentVersions,
@@ -37,19 +38,6 @@ type DeploymentVersionRecord = {
 
 function resolveStoragePath(deployment: { file_path?: string | null }, code: string) {
   return getStoragePathFromFilePath(deployment.file_path, code);
-}
-
-async function readHtmlContent(storagePath: string) {
-  const { data: fileData, error: downloadError } = await supabase.storage
-    .from('deployments')
-    .download(storagePath);
-
-  if (downloadError || !fileData) {
-    return { error: downloadError?.message || 'File not found', content: null };
-  }
-
-  const content = await fileData.text();
-  return { error: null, content };
 }
 
 async function fetchRequestedVersion(deploymentId: string, requestedVersion: string | null) {
@@ -132,7 +120,7 @@ export async function GET(request: NextRequest) {
     const storagePath = resolvedVersion
       ? getStoragePathFromFilePath(resolvedVersion.file_path, code)
       : resolveStoragePath(deployment, code);
-    const { error: readError, content } = await readHtmlContent(storagePath);
+    const { error: readError, content } = await downloadDeploymentHtml(storagePath);
     if (readError || content == null) {
       return jsonError({
         status: 404,
@@ -321,50 +309,24 @@ export async function PATCH(request: NextRequest) {
       nextFilename = normalizedFilename;
     }
 
-    const { data: version, error: versionError } = await supabase
-      .from('deployment_versions')
-      .insert({
-        deployment_id: deployment.id,
-        version_number: versionNumber,
-        title: nextTitle,
-        description: nextDescription,
-        filename: nextFilename,
-        file_path: publicUrl,
-        file_size: fileSize,
-      })
-      .select()
-      .single();
-
-    if (versionError || !version) {
-      return jsonError({
-        status: 500,
-        code: 'DEPLOYMENT_VERSION_INSERT_FAILED',
-        message: 'HTML 版本记录写入失败。',
-        detail: versionError?.message,
-        requestId,
-      });
-    }
-
     const updatedAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('deployments')
-      .update({
-        current_version_id: version.id,
-        title: nextTitle,
-        description: nextDescription,
-        filename: nextFilename,
-        file_path: publicUrl,
-        file_size: fileSize,
-        updated_at: updatedAt,
-      })
-      .eq('id', deployment.id);
+    const { version, stage, error: appendError } = await appendVersionAndPromote({
+      deploymentId: deployment.id,
+      versionNumber,
+      title: nextTitle,
+      description: nextDescription,
+      filename: nextFilename,
+      filePath: publicUrl,
+      fileSize,
+      updatedAt,
+    });
 
-    if (updateError) {
+    if (appendError || !version) {
       return jsonError({
         status: 500,
-        code: 'DEPLOYMENT_UPDATE_FAILED',
-        message: '部署记录更新失败。',
-        detail: updateError.message,
+        code: stage === 'pointer_update' ? 'DEPLOYMENT_UPDATE_FAILED' : 'DEPLOYMENT_VERSION_INSERT_FAILED',
+        message: stage === 'pointer_update' ? '部署记录更新失败。' : 'HTML 版本记录写入失败。',
+        detail: appendError?.message,
         requestId,
       });
     }

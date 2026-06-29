@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
     enabled?: unknown;
   };
 
-  const togglePassword = process.env.CORS_TOGGLE_PASSWORD;
+  // Strip a leading BOM (﻿) and surrounding whitespace that can sneak in
+  // when env vars are set via PowerShell-piped input, otherwise an exact
+  // comparison silently fails even when the visible value looks correct.
+  const togglePassword = process.env.CORS_TOGGLE_PASSWORD?.replace(/^﻿/, '').trim();
 
   if (!togglePassword) {
     return NextResponse.json(
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (typeof password !== 'string' || password !== togglePassword) {
+  if (typeof password !== 'string' || password.replace(/^﻿/, '').trim() !== togglePassword) {
     return NextResponse.json({ error: '密码错误' }, { status: 401 });
   }
 

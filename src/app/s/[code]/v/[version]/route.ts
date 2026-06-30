@@ -3,6 +3,7 @@ import { supabase } from '@/lib/db';
 import { htmlResponse } from '@/lib/api-response';
 import { downloadDeploymentHtml, getStoragePathFromFilePath } from '@/lib/storage';
 import { incrementViewCount } from '@/lib/deployment-queries';
+import { injectPreviewShim } from '@/lib/preview';
 
 export async function GET(
   request: NextRequest,
@@ -55,7 +56,7 @@ export async function GET(
       return new NextResponse('File content not found', { status: 404 });
     }
 
-    return htmlResponse(content, isPreview);
+    return htmlResponse(isPreview ? injectPreviewShim(content) : content, isPreview);
   } catch (error: unknown) {
     console.error('Serve version error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

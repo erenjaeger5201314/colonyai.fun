@@ -5,6 +5,7 @@ import { downloadDeploymentHtml, getStoragePathFromFilePath } from '@/lib/storag
 import { DeploymentVersionRow } from '@/lib/db';
 import { selectPrimaryVersion } from '@/lib/version-selection';
 import { incrementViewCount } from '@/lib/deployment-queries';
+import { injectPreviewShim } from '@/lib/preview';
 
 export async function GET(
   request: NextRequest,
@@ -58,7 +59,7 @@ export async function GET(
       return new NextResponse('File content not found', { status: 404 });
     }
 
-    return htmlResponse(content, isPreview);
+    return htmlResponse(isPreview ? injectPreviewShim(content) : content, isPreview);
 
   } catch (error: unknown) {
     console.error('Serve error:', error);

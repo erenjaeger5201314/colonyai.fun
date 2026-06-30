@@ -3,6 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { setBounded } from '@/lib/bounded-cache';
+import { useToast } from '@/hooks/useToast';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useLikedIds } from '@/hooks/useLikedIds';
 import {
   Trash2,
   Eye,
@@ -228,30 +231,10 @@ export default function DeploymentMarketplace({
   const [totalPages, setTotalPages] = useState(1);
   const [corsEnabled, setCorsEnabled] = useState(false);
   const pageSize = 12;
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    type: 'success' | 'error' | 'info';
-  }>({
-    open: false,
-    message: '',
-    type: 'info',
-  });
-  const [dialogState, setDialogState] = useState<{
-    isOpen: boolean;
-    type: 'danger' | 'warning' | 'info';
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    type: 'warning',
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
+  const { toast, showToast, closeToast } = useToast();
+  const { dialogState, showDialog, closeDialog } = useConfirmDialog();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const { likedIds, persistLikedIds } = useLikedIds('colonyai-liked-deployments');
   const [sourceDialog, setSourceDialog] = useState<{
     open: boolean;
     title: string;
@@ -268,10 +251,6 @@ export default function DeploymentMarketplace({
   // callbacks depend on `text` (which would refetch on every language switch).
   const textRef = useRef(text);
   textRef.current = text;
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({ open: true, message, type });
-  };
 
   const fetchDeploys = useCallback(async () => {
     setIsRefreshing(true);
@@ -305,7 +284,7 @@ export default function DeploymentMarketplace({
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [filter, page, searchTerm, sortBy]);
+  }, [filter, page, searchTerm, sortBy, showToast]);
 
   useEffect(() => {
     fetchDeploys();
@@ -342,44 +321,8 @@ export default function DeploymentMarketplace({
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem('colonyai-liked-deployments');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setLikedIds(new Set(parsed.filter((item): item is string => typeof item === 'string')));
-        }
-      }
-    } catch {
-      setLikedIds(new Set());
-    }
-  }, []);
-
-  useEffect(() => {
     setPage(1);
   }, [filter, searchTerm, sortBy]);
-
-  const closeDialog = () => {
-    setDialogState((prev) => ({ ...prev, isOpen: false }));
-  };
-
-  const showDialog = (
-    type: 'danger' | 'warning' | 'info',
-    nextTitle: string,
-    message: string,
-    onConfirm: () => void,
-  ) => {
-    setDialogState({
-      isOpen: true,
-      type,
-      title: nextTitle,
-      message,
-      onConfirm: () => {
-        onConfirm();
-        closeDialog();
-      },
-    });
-  };
 
   const handleToggleStatus = (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
@@ -467,7 +410,7 @@ export default function DeploymentMarketplace({
         showToast(text.downloadFailed, 'error');
       }
     },
-    [fetchDeploymentHtml, text.downloadFailed],
+    [fetchDeploymentHtml, text.downloadFailed, showToast],
   );
 
   const handleCopyCode = useCallback(
@@ -483,7 +426,7 @@ export default function DeploymentMarketplace({
         showToast(text.copyFailed, 'error');
       }
     },
-    [fetchDeploymentHtml, text.copyFailed, text.copySuccess],
+    [fetchDeploymentHtml, text.copyFailed, text.copySuccess, showToast],
   );
 
   const handleViewCode = useCallback(
@@ -509,13 +452,8 @@ export default function DeploymentMarketplace({
         showToast(text.fetchContentFailed, 'error');
       }
     },
-    [fetchDeploymentHtml, text.fetchContentFailed],
+    [fetchDeploymentHtml, text.fetchContentFailed, showToast],
   );
-
-  const persistLikedIds = (nextLikedIds: Set<string>) => {
-    setLikedIds(nextLikedIds);
-    window.localStorage.setItem('colonyai-liked-deployments', JSON.stringify(Array.from(nextLikedIds)));
-  };
 
   const persistLikedVersionFromResponse = (versionId: unknown, alreadyLiked: boolean) => {
     if (typeof versionId !== 'string') return;
@@ -577,7 +515,7 @@ export default function DeploymentMarketplace({
         showToast(alreadyLiked ? text.unlikeFailed : text.likeFailed, 'error');
       }
     },
-    [likedIds, text.likeFailed, text.likeSuccess, text.unlikeFailed, text.unlikeSuccess],
+    [likedIds, text.likeFailed, text.likeSuccess, text.unlikeFailed, text.unlikeSuccess, showToast, persistLikedIds],
   );
 
   const formatDate = (dateStr: string) => {
@@ -598,7 +536,7 @@ export default function DeploymentMarketplace({
         isOpen={toast.open}
         message={toast.message}
         type={toast.type}
-        onClose={() => setToast((current) => ({ ...current, open: false }))}
+        onClose={closeToast}
       />
       <ConfirmDialog
         isOpen={dialogState.isOpen}

@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 import { setBounded } from '@/lib/bounded-cache';
+import { useToast } from '@/hooks/useToast';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useLikedIds } from '@/hooks/useLikedIds';
 import {
   ArrowLeft,
   Calendar,
@@ -251,17 +254,9 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<Record<string, string>>({});
-  const [likedVersionIds, setLikedVersionIds] = useState<Set<string>>(new Set());
+  const { likedIds: likedVersionIds, persistLikedIds: persistLikedVersionIds } = useLikedIds('colonyai-liked-deployment-versions');
   const [corsEnabled, setCorsEnabled] = useState(false);
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    type: 'success' | 'error' | 'info';
-  }>({
-    open: false,
-    message: '',
-    type: 'info',
-  });
+  const { toast, showToast, closeToast } = useToast();
   const [sourceDialog, setSourceDialog] = useState<SourceDialogState>({
     open: false,
     version: null,
@@ -271,23 +266,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
     saving: false,
   });
   const [uploadingVersion, setUploadingVersion] = useState(false);
-  const [dialogState, setDialogState] = useState<{
-    isOpen: boolean;
-    type: 'danger' | 'warning' | 'info';
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    type: 'warning',
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({ open: true, message, type });
-  };
+  const { dialogState, showDialog, closeDialog } = useConfirmDialog();
 
   const fetchDeploy = useCallback(async (targetId: string) => {
     const res = await fetch(`/api/deploy/${targetId}`);
@@ -320,7 +299,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       }
     };
     load();
-  }, [fetchDeploy, id, router, text.fetchFailed]);
+  }, [fetchDeploy, id, router, text.fetchFailed, showToast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -393,42 +372,6 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       return primaryVersion.id;
     });
   }, [primaryVersion, versions]);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem('colonyai-liked-deployment-versions');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setLikedVersionIds(new Set(parsed.filter((item): item is string => typeof item === 'string')));
-        }
-      }
-    } catch {
-      setLikedVersionIds(new Set());
-    }
-  }, []);
-
-  const closeDialog = () => {
-    setDialogState((prev) => ({ ...prev, isOpen: false }));
-  };
-
-  const showDialog = (
-    type: 'danger' | 'warning' | 'info',
-    title: string,
-    message: string,
-    onConfirm: () => void,
-  ) => {
-    setDialogState({
-      isOpen: true,
-      type,
-      title,
-      message,
-      onConfirm: () => {
-        onConfirm();
-        closeDialog();
-      },
-    });
-  };
 
   const getVersionUrl = useCallback((version?: DeploymentVersion | null) => {
     if (!deploy) return '';
@@ -632,10 +575,6 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
     }
   };
 
-  const persistLikedVersionIds = (nextLikedIds: Set<string>) => {
-    setLikedVersionIds(nextLikedIds);
-    window.localStorage.setItem('colonyai-liked-deployment-versions', JSON.stringify(Array.from(nextLikedIds)));
-  };
 
   const handleLikeVersion = async (version: DeploymentVersion, useDeploymentEndpoint = false) => {
     if (!deploy || deploy.status !== 'active') return;
@@ -922,7 +861,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         isOpen={toast.open}
         message={toast.message}
         type={toast.type}
-        onClose={() => setToast((current) => ({ ...current, open: false }))}
+        onClose={closeToast}
       />
       <ConfirmDialog
         isOpen={dialogState.isOpen}

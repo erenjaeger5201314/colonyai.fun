@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { RefreshCw, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { injectPreviewShim } from '@/lib/preview';
 
 interface PreviewProps {
   content?: string;
@@ -40,7 +41,7 @@ export default function Preview({ content, url }: PreviewProps) {
         iframeRef.current.src = url;
         iframeRef.current.removeAttribute('srcdoc');
       } else if (content) {
-        iframeRef.current.srcdoc = content;
+        iframeRef.current.srcdoc = injectPreviewShim(content);
         iframeRef.current.removeAttribute('src');
       } else {
         iframeRef.current.removeAttribute('src');
@@ -54,7 +55,7 @@ export default function Preview({ content, url }: PreviewProps) {
       if (url) {
         iframeRef.current.src = url;
       } else if (content) {
-        iframeRef.current.srcdoc = content;
+        iframeRef.current.srcdoc = injectPreviewShim(content);
       }
     }
   };
@@ -121,7 +122,7 @@ export default function Preview({ content, url }: PreviewProps) {
             ref={iframeRef}
             className="w-full h-full border-0"
             title={text.iframeTitle}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            sandbox="allow-scripts allow-popups allow-forms"
           />
         </div>
       </div>

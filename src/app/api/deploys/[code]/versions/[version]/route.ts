@@ -10,7 +10,7 @@ import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
 import { createVersionedHtmlPath, getStoragePathFromFilePath } from '@/lib/storage';
 import { selectPrimaryVersion } from '@/lib/version-selection';
-import { fetchDeploymentVersion, fetchDeploymentVersions } from '@/lib/deployment-queries';
+import { fetchDeploymentVersion, fetchDeploymentVersions, promoteVersionToCurrent } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,19 +77,7 @@ async function syncDeploymentCurrent(deployment: DeploymentForVersionEdit) {
     return { currentVersion: null, versions };
   }
 
-  const { error } = await supabase
-    .from('deployments')
-    .update({
-      current_version_id: nextCurrent.id,
-      title: nextCurrent.title,
-      description: nextCurrent.description,
-      filename: nextCurrent.filename,
-      file_path: nextCurrent.file_path,
-      file_size: nextCurrent.file_size,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', deployment.id);
-
+  const { error } = await promoteVersionToCurrent(deployment.id, nextCurrent);
   if (error) throw new Error(error.message);
   return { currentVersion: nextCurrent, versions };
 }

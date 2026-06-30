@@ -3,7 +3,7 @@ import { supabase } from '@/lib/db';
 import { SHORT_CODE_PATTERN } from '@/lib/deploy-config';
 import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
-import { fetchDeploymentVersion } from '@/lib/deployment-queries';
+import { fetchDeploymentVersion, promoteVersionToCurrent } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,18 +80,7 @@ export async function PATCH(
     }
 
     const updatedAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('deployments')
-      .update({
-        current_version_id: version.id,
-        title: version.title,
-        description: version.description,
-        filename: version.filename,
-        file_path: version.file_path,
-        file_size: version.file_size,
-        updated_at: updatedAt,
-      })
-      .eq('id', deployment.id);
+    const { error: updateError } = await promoteVersionToCurrent(deployment.id, version, undefined, updatedAt);
 
     if (updateError) {
       return jsonError({

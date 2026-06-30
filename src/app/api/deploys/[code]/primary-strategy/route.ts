@@ -4,6 +4,7 @@ import { SHORT_CODE_PATTERN } from '@/lib/deploy-config';
 import { jsonError, withNoStoreHeaders } from '@/lib/api-response';
 import { getErrorMessage } from '@/lib/error';
 import { PrimaryVersionStrategy, selectPrimaryVersion } from '@/lib/version-selection';
+import { promoteVersionToCurrent } from '@/lib/deployment-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -133,19 +134,11 @@ export async function PATCH(
       });
     }
 
-    const { error: updateError } = await supabase
-      .from('deployments')
-      .update({
-        primary_version_strategy: strategy,
-        current_version_id: primaryVersion.id,
-        title: primaryVersion.title,
-        description: primaryVersion.description,
-        filename: primaryVersion.filename,
-        file_path: primaryVersion.file_path,
-        file_size: primaryVersion.file_size,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', found.deployment.id);
+    const { error: updateError } = await promoteVersionToCurrent(
+      found.deployment.id,
+      primaryVersion,
+      { primary_version_strategy: strategy },
+    );
 
     if (updateError) {
       return jsonError({

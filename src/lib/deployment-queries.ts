@@ -55,6 +55,36 @@ export async function getNextVersionNumber(deploymentId: string) {
   return Number(data?.version_number ?? 0) + 1;
 }
 
+// The deployments row caches the "current version" metadata, so promoting a
+// version means copying these fields onto the deployment and pointing at it.
+// Shared by append/current/primary-strategy/version-edit, which all did this
+// same UPDATE inline.
+type PromotableVersion = Pick<
+  DeploymentVersionRow,
+  'id' | 'title' | 'description' | 'filename' | 'file_path' | 'file_size'
+>;
+
+export function promoteVersionToCurrent(
+  deploymentId: string,
+  version: PromotableVersion,
+  extra?: Record<string, unknown>,
+  updatedAt: string = new Date().toISOString(),
+) {
+  return supabase
+    .from('deployments')
+    .update({
+      current_version_id: version.id,
+      title: version.title,
+      description: version.description,
+      filename: version.filename,
+      file_path: version.file_path,
+      file_size: version.file_size,
+      updated_at: updatedAt,
+      ...extra,
+    })
+    .eq('id', deploymentId);
+}
+
 type AppendVersionParams = {
   deploymentId: string;
   versionNumber: number;
@@ -102,18 +132,12 @@ export async function appendVersionAndPromote(
     return { version: null, stage: 'version_insert', error: versionError };
   }
 
-  const { error: updateError } = await supabase
-    .from('deployments')
-    .update({
-      current_version_id: version.id,
-      title,
-      description,
-      filename,
-      file_path: filePath,
-      file_size: fileSize,
-      updated_at: updatedAt,
-    })
-    .eq('id', deploymentId);
+  const { error: updateError } = await promoteVersionToCurrent(
+    deploymentId,
+    version as DeploymentVersionRow,
+    undefined,
+    updatedAt,
+  );
 
   if (updateError) {
     return { version: version as DeploymentVersionRow, stage: 'pointer_update', error: updateError };

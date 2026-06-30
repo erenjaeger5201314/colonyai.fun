@@ -18,7 +18,6 @@ export function mapDeploymentRow(row: DeploymentRow): Deployment {
     viewCount: row.view_count,
     likeCount: row.like_count ?? 0,
     versionCount: row.version_count ?? 1,
-    expiresAt: row.expires_at ?? null,
     status: row.status,
   };
 }

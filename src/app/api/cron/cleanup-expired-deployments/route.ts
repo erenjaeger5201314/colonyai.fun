@@ -5,9 +5,14 @@ import { deleteDeploymentFilesAndRecord } from '@/lib/deployment-delete';
 import { getErrorMessage } from '@/lib/error';
 
 export const dynamic = 'force-dynamic';
+// Give the function the full Hobby-plan budget so a single run can clear as
+// much as possible without an artificial per-day cap.
+export const maxDuration = 60;
 
-const CLEANUP_LIMIT = 300;
 const CANDIDATE_PAGE_SIZE = 500;
+// Stop starting new deletions past this point so the function returns cleanly
+// before the 60s limit; anything left is picked up on the next daily run.
+const DELETE_TIME_BUDGET_MS = 50_000;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -19,7 +24,8 @@ async function fetchCleanupCandidates() {
   const candidates: Array<{ id: string; code: string; like_count: number | null }> = [];
   let from = 0;
 
-  while (candidates.length < CLEANUP_LIMIT) {
+  // Collect every unpreserved (zero-like, single-version) deployment, oldest first.
+  while (true) {
     const { data, error } = await supabase
       .from('deployments')
       .select('id, code, like_count')
@@ -46,7 +52,7 @@ async function fetchCleanupCandidates() {
     from += CANDIDATE_PAGE_SIZE;
   }
 
-  return candidates.slice(0, CLEANUP_LIMIT);
+  return candidates;
 }
 
 export async function GET(request: NextRequest) {
@@ -60,10 +66,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const candidates = await fetchCleanupCandidates();
+    const startedAt = Date.now();
     const deleted: Array<{ id: string; code: string }> = [];
     const failed: Array<{ id: string; code: string; error: string }> = [];
+    let stoppedForTime = false;
 
     for (const deployment of candidates) {
+      if (Date.now() - startedAt > DELETE_TIME_BUDGET_MS) {
+        stoppedForTime = true;
+        break;
+      }
       try {
         await deleteDeploymentFilesAndRecord({ id: deployment.id, code: deployment.code });
         deleted.push({ id: deployment.id, code: deployment.code });
@@ -72,10 +84,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const remaining = candidates.length - deleted.length - failed.length;
     console.log('cleanup-unpreserved-deployments', {
       checked: candidates.length,
       deletedCount: deleted.length,
       failedCount: failed.length,
+      stoppedForTime,
+      remaining,
     });
 
     return NextResponse.json({
@@ -83,6 +98,8 @@ export async function GET(request: NextRequest) {
       checked: candidates.length,
       deletedCount: deleted.length,
       failedCount: failed.length,
+      stoppedForTime,
+      remaining,
       deleted,
       failed,
     });

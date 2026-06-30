@@ -6,7 +6,7 @@ import {
   manualLikeRequiredError,
   withNoStoreHeaders,
 } from '@/lib/api-response';
-import { getErrorMessage, isMissingLikeCountError } from '@/lib/error';
+import { getErrorMessage } from '@/lib/error';
 import { DeploymentVersionRow } from '@/lib/db';
 import { selectPrimaryVersion } from '@/lib/version-selection';
 
@@ -19,15 +19,6 @@ async function updatePrimaryVersionLike(id: string, action: 'increment' | 'decre
     .select('id, status, like_count, current_version_id, primary_version_strategy')
     .eq('id', id)
     .maybeSingle();
-
-  if (isMissingLikeCountError(fetchError)) {
-    return jsonError({
-      status: 503,
-      code: 'LIKE_MIGRATION_REQUIRED',
-      message: '点赞功能还没完成数据库升级。',
-      detail: '请先执行 npm run supabase:db:push，将 like_count 字段推到 Supabase。',
-    });
-  }
 
   if (fetchError || !deployment) {
     return jsonError({

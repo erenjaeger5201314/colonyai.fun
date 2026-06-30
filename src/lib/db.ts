@@ -37,7 +37,6 @@ export interface Deployment {
   viewCount: number;
   likeCount: number;
   versionCount: number;
-  expiresAt: string | null;
   status: 'active' | 'inactive';
 }
 
@@ -74,7 +73,6 @@ export interface DeploymentRow {
   view_count: number;
   like_count: number | null;
   version_count?: number | null;
-  expires_at?: string | null;
   status: 'active' | 'inactive';
 }
 

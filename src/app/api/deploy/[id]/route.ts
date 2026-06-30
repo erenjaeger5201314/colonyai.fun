@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DeploymentRow, DeploymentVersionRow, supabase } from '@/lib/db';
 import { mapDeploymentRow, mapDeploymentVersionRow } from '@/lib/deployment-mapper';
-import { getErrorMessage, isMissingLikeCountError } from '@/lib/error';
+import { getErrorMessage } from '@/lib/error';
 import { jsonError } from '@/lib/api-response';
 import { selectPrimaryVersion } from '@/lib/version-selection';
 import { deleteDeploymentFilesAndRecord } from '@/lib/deployment-delete';
@@ -13,20 +13,6 @@ async function fetchDeploymentLockState(id: string) {
     .select('like_count')
     .eq('id', id)
     .maybeSingle();
-
-  if (isMissingLikeCountError(error)) {
-    const { data: fallbackData, error: fallbackError } = await supabase
-      .from('deployments')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle();
-
-    return {
-      found: Boolean(fallbackData),
-      locked: false,
-      error: fallbackError?.message,
-    };
-  }
 
   return {
     found: Boolean(data),
@@ -153,22 +139,11 @@ export async function DELETE(
     const { id } = await params;
     
     // Get deployment info first to find files
-    let { data: deployment, error: fetchError } = await supabase
+    const { data: deployment, error: fetchError } = await supabase
       .from('deployments')
       .select('id, code, like_count')
       .eq('id', id)
       .maybeSingle();
-
-    if (isMissingLikeCountError(fetchError)) {
-      const fallback = await supabase
-        .from('deployments')
-        .select('id, code')
-        .eq('id', id)
-        .maybeSingle();
-
-      deployment = fallback.data ? { ...fallback.data, like_count: 0 } : null;
-      fetchError = fallback.error;
-    }
 
     if (fetchError || !deployment) {
       return jsonError({

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DeploymentRow, supabase } from '@/lib/db';
 import { mapDeploymentRow } from '@/lib/deployment-mapper';
-import { getErrorMessage, isMissingLikeCountError } from '@/lib/error';
+import { getErrorMessage } from '@/lib/error';
 import { jsonError } from '@/lib/api-response';
 import { getIterationCount } from '@/lib/deployment-retention';
 
-const DEPLOYMENT_COLUMNS = 'id, code, current_version_id, title, description, filename, file_path, file_size, qr_code_path, created_at, updated_at, view_count, status, expires_at';
-const DEPLOYMENT_COLUMNS_WITH_LIKES = `${DEPLOYMENT_COLUMNS}, like_count`;
+const DEPLOYMENT_COLUMNS = 'id, code, current_version_id, title, description, filename, file_path, file_size, qr_code_path, created_at, updated_at, view_count, status, like_count';
 const VERSION_COUNT_COLUMNS = 'deployment_id';
 
-function parseSort(sortBy: string | null, includeLikeCount = true) {
+function parseSort(sortBy: string | null) {
   switch (sortBy) {
     case 'oldest':
       return { column: 'created_at', ascending: true };
@@ -18,13 +17,9 @@ function parseSort(sortBy: string | null, includeLikeCount = true) {
     case 'leastViewed':
       return { column: 'view_count', ascending: true };
     case 'mostLiked':
-      return includeLikeCount
-        ? { column: 'like_count', ascending: false }
-        : { column: 'created_at', ascending: false };
+      return { column: 'like_count', ascending: false };
     case 'leastLiked':
-      return includeLikeCount
-        ? { column: 'like_count', ascending: true }
-        : { column: 'created_at', ascending: false };
+      return { column: 'like_count', ascending: true };
     case 'latest':
     default:
       return { column: 'created_at', ascending: false };
@@ -41,33 +36,23 @@ export async function GET(request: NextRequest) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const fetchDeployPage = async (includeLikeCount: boolean) => {
-      const sortBy = parseSort(params.get('sortBy'), includeLikeCount);
-      let query = supabase
-        .from('deployments')
-        .select(includeLikeCount ? DEPLOYMENT_COLUMNS_WITH_LIKES : DEPLOYMENT_COLUMNS, { count: 'exact' });
+    const sortBy = parseSort(params.get('sortBy'));
+    let query = supabase
+      .from('deployments')
+      .select(DEPLOYMENT_COLUMNS, { count: 'exact' });
 
-      if (status === 'active' || status === 'inactive') {
-        query = query.eq('status', status);
-      }
-
-      if (keyword) {
-        const escapedKeyword = keyword.replace(/,/g, '\\,').replace(/%/g, '\\%').replace(/_/g, '\\_');
-        query = query.or(`title.ilike.%${escapedKeyword}%,description.ilike.%${escapedKeyword}%,filename.ilike.%${escapedKeyword}%,code.ilike.%${escapedKeyword}%`);
-      }
-
-      return query
-        .order(sortBy.column, { ascending: sortBy.ascending })
-        .range(from, to);
-    };
-
-    let includeLikeCount = true;
-    let { data: deploys, error, count } = await fetchDeployPage(includeLikeCount);
-
-    if (isMissingLikeCountError(error)) {
-      includeLikeCount = false;
-      ({ data: deploys, error, count } = await fetchDeployPage(includeLikeCount));
+    if (status === 'active' || status === 'inactive') {
+      query = query.eq('status', status);
     }
+
+    if (keyword) {
+      const escapedKeyword = keyword.replace(/,/g, '\\,').replace(/%/g, '\\%').replace(/_/g, '\\_');
+      query = query.or(`title.ilike.%${escapedKeyword}%,description.ilike.%${escapedKeyword}%,filename.ilike.%${escapedKeyword}%,code.ilike.%${escapedKeyword}%`);
+    }
+
+    const { data: deploys, error, count } = await query
+      .order(sortBy.column, { ascending: sortBy.ascending })
+      .range(from, to);
 
     if (error) throw new Error(error.message);
 
@@ -96,7 +81,7 @@ export async function GET(request: NextRequest) {
     const formattedDeploys = deployRows.map((deploy) =>
       mapDeploymentRow({
         ...deploy,
-        like_count: includeLikeCount ? deploy.like_count ?? 0 : 0,
+        like_count: deploy.like_count ?? 0,
         version_count: getIterationCount(versionCounts.get(String(deploy.id))) + 1,
       } as DeploymentRow)
     );

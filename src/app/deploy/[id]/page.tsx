@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'qrcode';
+import { setBounded } from '@/lib/bounded-cache';
 import {
   ArrowLeft,
   Calendar,
@@ -323,7 +324,12 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
   useEffect(() => {
     let cancelled = false;
+    let lastFetchedAt = 0;
     const fetchCorsState = () => {
+      // Throttle focus-triggered refreshes so rapid tab switching doesn't spam the API.
+      const now = Date.now();
+      if (now - lastFetchedAt < 5000) return;
+      lastFetchedAt = now;
       fetch('/api/cors', { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
@@ -502,7 +508,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       throw new Error(data.error || text.fetchContentFailed);
     }
 
-    htmlCacheRef.current.set(cacheKey, data.content);
+    setBounded(htmlCacheRef.current, cacheKey, data.content);
     return data.content;
   }, [deploy, text.fetchContentFailed]);
 

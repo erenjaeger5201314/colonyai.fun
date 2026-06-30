@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { setBounded } from '@/lib/bounded-cache';
 import {
   Trash2,
   Eye,
@@ -263,6 +264,10 @@ export default function DeploymentMarketplace({
     loading: false,
   });
   const htmlCacheRef = useRef<Map<string, string>>(new Map());
+  // Keep the latest i18n strings reachable without making data-fetching
+  // callbacks depend on `text` (which would refetch on every language switch).
+  const textRef = useRef(text);
+  textRef.current = text;
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ open: true, message, type });
@@ -288,19 +293,19 @@ export default function DeploymentMarketplace({
       const res = await fetch(`/api/deploys?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || text.fetchListFailedShort);
+        throw new Error(data.error || textRef.current.fetchListFailedShort);
       }
       setDeploys(data.deploys || []);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
       console.error('Failed to fetch deploys', error);
-      showToast(text.fetchListFailed, 'error');
+      showToast(textRef.current.fetchListFailed, 'error');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [filter, page, searchTerm, sortBy, text]);
+  }, [filter, page, searchTerm, sortBy]);
 
   useEffect(() => {
     fetchDeploys();
@@ -440,7 +445,7 @@ export default function DeploymentMarketplace({
       throw new Error(data.error || text.fetchContentFailed);
     }
 
-    htmlCacheRef.current.set(deploy.code, data.content);
+    setBounded(htmlCacheRef.current, deploy.code, data.content);
     return data.content;
   }, [text.fetchContentFailed]);
 

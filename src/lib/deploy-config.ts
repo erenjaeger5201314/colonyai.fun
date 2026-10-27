@@ -1,4 +1,4 @@
-export const MAX_HTML_SIZE_BYTES = 1024 * 1024; // 1 MB
+export const MAX_HTML_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 export const MAX_DESCRIPTION_LENGTH = 240;
 export const SHORT_CODE_PATTERN = /^[a-z0-9](?:[a-z0-9-]{2,30}[a-z0-9])?$/;
 
